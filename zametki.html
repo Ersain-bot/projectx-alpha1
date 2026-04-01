@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Заметки</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root {
+--bg-color: #f2f2f7;
+--header-bg: rgba(255,255,255,0.92);
+--accent-color: #007AFF;
+--border-color: #d1d1d6;
+--card-bg: #ffffff;
+--text-color: #000000;
+--secondary-text: #8e8e93;
+--header-height: 50px;
+}
+body.dark-mode {
+--bg-color: #1c1c1e;
+--header-bg: rgba(28,28,30,0.95);
+--border-color: #38383a;
+--card-bg: #2c2c2e;
+--text-color: #ffffff;
+--secondary-text: #aeaeae;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+background-color: var(--bg-color);
+color: var(--text-color);
+min-height: 100vh;
+}
+.top-bar {
+position: fixed; top:0; left:0; width:100%;
+height: calc(var(--header-height) + env(safe-area-inset-top));
+background: var(--header-bg);
+backdrop-filter: blur(20px);
+border-bottom: 0.5px solid var(--border-color);
+z-index: 1000;
+}
+.header-content {
+padding-top: env(safe-area-inset-top);
+padding-left: 16px; padding-right: 16px;
+display: flex; align-items: center; justify-content: space-between;
+height: 100%;
+}
+.nav-btn {
+background: none; border: none; color: var(--accent-color);
+font-size: 22px; font-weight: 600; cursor: pointer;
+}
+.header-title {
+font-size: 20px; font-weight: 700; flex: 1; text-align: center;
+}
+
+/* Основной контент */
+.main-container {
+padding: calc(var(--header-height) + 30px) 16px 100px;
+max-width: 600px; margin: 0 auto;
+}
+.input-section {
+display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;
+}
+textarea {
+background: var(--card-bg);
+border: 1px solid var(--border-color);
+border-radius: 18px;
+padding: 18px;
+font-size: 17px;
+color: var(--text-color);
+resize: none;
+height: 140px;
+outline: none;
+box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+#addBtn {
+background: var(--accent-color);
+color: white;
+border: none;
+padding: 16px;
+border-radius: 18px;
+font-size: 17px;
+font-weight: 600;
+cursor: pointer;
+}
+.notes-list {
+display: flex; flex-direction: column; gap: 12px;
+}
+.note-item {
+background: var(--card-bg);
+padding: 18px;
+border-radius: 18px;
+box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+display: flex;
+flex-direction: column;
+gap: 12px;
+animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+.note-text {
+font-size: 17px; line-height: 1.5; word-break: break-word;
+}
+.delete-btn {
+align-self: flex-end;
+background: #ff3b30; color: white;
+border: none; border-radius: 50%;
+width: 32px; height: 32px;
+font-size: 18px;
+display: flex; align-items: center; justify-content: center;
+cursor: pointer;
+}
+
+/* Плавающая кнопка */
+.add-float {
+position: fixed; bottom: 30px; right: 20px;
+width: 62px; height: 62px;
+background: var(--accent-color);
+color: white;
+border: none;
+border-radius: 50%;
+font-size: 34px;
+box-shadow: 0 6px 20px rgba(0,122,255,0.4);
+cursor: pointer;
+z-index: 100;
+}
+</style>
+</head>
+<body>
+<header class="top-bar">
+<div class="header-content">
+<button class="nav-btn" onclick="window.location.href='index.html'">←</button>
+<div class="header-title" id="main-title">Заметки</div>
+</div>
+</header>
+
+<main class="main-container">
+<div class="input-section">
+<textarea id="noteInput" placeholder="Что нового?"></textarea>
+<button id="addBtn">Добавить заметку</button>
+</div>
+<div id="notesList" class="notes-list"></div>
+</main>
+
+<button class="add-float" id="floatAdd">+</button>
+
+<script>
+// === ТЕМА ИЗ INDEX.HTML ===
+function applyTheme() {
+const savedTheme = localStorage.getItem('theme') || 'system';
+const body = document.body;
+if (savedTheme === 'dark') body.classList.add('dark-mode');
+else if (savedTheme === 'light') body.classList.remove('dark-mode');
+else {
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+body.classList.toggle('dark-mode', isDark);
+}
+}
+applyTheme();
+
+// === ЛОГИКА ЗАМЕТОК ===
+let notes = JSON.parse(localStorage.getItem('my_pwa_notes')) || [];
+
+const noteInput = document.getElementById('noteInput');
+const addBtn = document.getElementById('addBtn');
+const floatAdd = document.getElementById('floatAdd');
+const notesList = document.getElementById('notesList');
+
+function renderNotes() {
+notesList.innerHTML = '';
+if (notes.length === 0) {
+notesList.innerHTML = `<p style="text-align:center; color:var(--secondary-text); padding:60px 20px;">Пока нет заметок</p>`;
+return;
+}
+notes.forEach((note, index) => {
+const div = document.createElement('div');
+div.className = 'note-item';
+div.innerHTML = `
+<div class="note-text">${note.content}</div>
+<button class="delete-btn" onclick="deleteNote(${index}); event.stopPropagation();">×</button>
+`;
+notesList.appendChild(div);
+});
+}
+
+function saveNotes() {
+localStorage.setItem('my_pwa_notes', JSON.stringify(notes));
+}
+
+addBtn.addEventListener('click', () => addNote());
+floatAdd.addEventListener('click', () => addNote());
+
+function addNote() {
+const text = noteInput.value.trim();
+if (!text) return;
+notes.unshift({ content: text });
+saveNotes();
+noteInput.value = '';
+renderNotes();
+}
+
+window.deleteNote = function(index) {
+if (confirm('Удалить заметку?')) {
+notes.splice(index, 1);
+saveNotes();
+renderNotes();
+}
+};
+
+// Запуск
+window.onload = () => {
+renderNotes();
+
+// PWA (оставил как было)
+const manifest = {
+"name": "Заметки",
+"short_name": "Заметки",
+"start_url": ".",
+"display": "standalone",
+"background_color": "#1c1c1e",
+"theme_color": "#007AFF",
+"icons": [{ "src": "https://cdn-icons-png.flaticon.com/512/564/564445.png", "sizes": "512x512", "type": "image/png" }]
+};
+const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = URL.createObjectURL(manifestBlob);
+document.head.appendChild(link);
+};
+</script>
+</body>
+</html>
