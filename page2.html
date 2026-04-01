@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Планы</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root {
+--bg-color: #f2f2f7;
+--header-bg: rgba(255, 255, 255, 0.85);
+--accent-color: #007AFF;
+--border-color: #d1d1d6;
+--card-bg: #ffffff;
+--text-color: #000000;
+--secondary-text: #8e8e93;
+--segmented-bg: #e3e3e9;
+--btn-bg: #f1f1f3;
+--modal-bg: #ffffff;
+--input-border: #ddd;
+--header-height: 50px;
+        }
+body.dark-mode {
+--bg-color: #1c1c1e;
+--header-bg: rgba(28, 28, 30, 0.9);
+--border-color: #38383a;
+--card-bg: #2c2c2e;
+--text-color: #ffffff;
+--secondary-text: #aeaeae;
+--segmented-bg: #3a3a3c;
+--btn-bg: #3a3a3c;
+--modal-bg: #2c2c2e;
+--input-border: #444;
+        }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+background-color: var(--bg-color);
+color: var(--text-color);
+transition: background 0.3s ease, color 0.3s ease;
+min-height: 100vh;
+        }
+/* --- ШАПКА --- */
+.top-bar {
+position: fixed;
+top: 0; left: 0; width: 100%;
+height: calc(var(--header-height) + env(safe-area-inset-top));
+background-color: var(--header-bg);
+backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+border-bottom: 0.5px solid var(--border-color);
+display: flex; z-index: 1000;
+transition: background-color 0.3s, border-color 0.3s;
+        }
+.header-content {
+width: 100%; padding-top: env(safe-area-inset-top);
+padding-left: 16px; padding-right: 16px;
+display: flex; align-items: center; justify-content: space-between;
+        }
+.nav-btn {
+background: none; border: none; color: var(--accent-color);
+font-size: 16px; font-weight: 500; cursor: pointer; padding: 8px 0;
+        }
+.header-title {
+font-size: 18px; font-weight: 600; text-align: center; flex: 1;
+        }
+/* --- ОСНОВНОЙ КОНТЕЙНЕР ЗАДАЧ --- */
+.main-container {
+max-width: 600px; margin: 0 auto;
+padding: calc(var(--header-height) + env(safe-area-inset-top) + 20px) 16px 100px;
+        }
+.week-buttons-container {
+background: var(--card-bg); border-radius: 18px;
+padding: 12px 10px; margin-bottom: 20px;
+box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+transition: background 0.3s;
+        }
+.week-buttons {
+display: flex; overflow-x: auto; gap: 8px; scrollbar-width: none;
+        }
+.week-buttons::-webkit-scrollbar { display: none; }
+.day-btn {
+padding: 10px 22px; border: none; border-radius: 30px;
+font-size: 16px; font-weight: 600;
+background: var(--btn-bg); color: var(--text-color);
+white-space: nowrap; cursor: pointer; min-width: 50px; text-align: center;
+transition: background 0.3s, color 0.3s;
+        }
+.day-btn.active { background: var(--accent-color); color: white; }
+.task {
+background: var(--card-bg); padding: 18px 20px;
+margin-bottom: 12px; border-radius: 20px;
+box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+font-size: 17px; display: flex; align-items: center; gap: 14px;
+cursor: pointer; transition: all 0.3s ease; user-select: none;
+        }
+.task.done span { text-decoration: line-through; color: var(--secondary-text); }
+.status-dot {
+width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+        }
+.delete-btn {
+margin-left: auto; width: 34px; height: 34px;
+background: #ff3b30; color: white; border: none; border-radius: 50%;
+font-size: 18px; display: flex; align-items: center; justify-content: center;
+cursor: pointer; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.4);
+        }
+.add-task-btn {
+position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+width: 62px; height: 62px; background: var(--accent-color);
+color: white; border: none; border-radius: 50%; font-size: 34px;
+box-shadow: 0 5px 18px rgba(0,122,255,0.4); cursor: pointer; z-index: 150;
+        }
+/* --- МОДАЛЬНОЕ ОКНО --- */
+.modal {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0,0,0,0.5); display: none; align-items: center;
+justify-content: center; z-index: 400; backdrop-filter: blur(3px);
+        }
+.modal.show { display: flex; }
+.modal-content {
+background: var(--modal-bg); width: 90%; max-width: 380px;
+border-radius: 26px; padding: 28px; box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+transition: background 0.3s;
+        }
+.modal h3 { margin-bottom: 18px; text-align: center; font-size: 21px; color: var(--text-color); }
+.modal input {
+width: 100%; padding: 16px; font-size: 17px;
+border: 1px solid var(--input-border); background: var(--bg-color); color: var(--text-color);
+border-radius: 16px; margin-bottom: 22px; outline: none; transition: all 0.3s;
+        }
+.modal-buttons { display: flex; gap: 12px; }
+.modal-btn {
+flex: 1; padding: 15px; border: none; border-radius: 16px;
+font-size: 17px; font-weight: 600; cursor: pointer;
+        }
+.cancel { background: var(--btn-bg); color: var(--text-color); }
+.save { background: var(--accent-color); color: white; }
+/* --- БОКОВЫЕ МЕНЮ --- */
+.sidebar {
+position: fixed; top: 0; width: 280px; height: 100%;
+background: var(--card-bg); box-shadow: 0 0 20px rgba(0,0,0,0.2);
+transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+z-index: 2000; padding: env(safe-area-inset-top) 0 20px; overflow-y: auto;
+        }
+.sidebar-left { left: 0; transform: translateX(-100%); }
+.sidebar-left.active { transform: translateX(0); }
+.sidebar-right { right: 0; transform: translateX(100%); width: 320px; }
+.sidebar-right.active { transform: translateX(0); }
+.sidebar-header {
+display: flex; justify-content: space-between; align-items: center;
+padding: 20px 16px 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px;
+        }
+.sidebar-title { font-size: 22px; font-weight: 700; color: var(--text-color); }
+.close-btn { font-size: 28px; cursor: pointer; color: var(--secondary-text); }
+/* Настройки */
+.settings-group { padding: 0 16px; margin-bottom: 24px; }
+.settings-group label {
+display: block; font-size: 12px; color: var(--secondary-text);
+text-transform: uppercase; margin-bottom: 8px; margin-left: 4px;
+        }
+.segmented-control {
+display: flex; background: var(--segmented-bg);
+padding: 2px; border-radius: 9px; gap: 2px;
+        }
+.segment {
+flex: 1; text-align: center; padding: 10px 0; font-size: 14px;
+cursor: pointer; border-radius: 7px; color: var(--text-color); transition: all 0.2s;
+        }
+.segment.active { background: var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: 600; }
+.dark-mode .segment.active { background: #636366; color: white; }
+/* Недели */
+.weeks-list { padding: 0 16px; }
+.week-item {
+padding: 16px 18px; margin-bottom: 10px; background: var(--btn-bg); color: var(--text-color);
+border-radius: 18px; font-size: 18px; cursor: pointer; transition: 0.3s;
+        }
+.week-item.active { background: var(--accent-color); color: white; }
+.add-week {
+display: flex; align-items: center; justify-content: center; gap: 10px;
+padding: 16px; background: var(--accent-color); color: white; border-radius: 18px;
+margin: 20px 16px; font-size: 17px; font-weight: 600; cursor: pointer;
+        }
+.overlay {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: rgba(0,0,0,0.4); opacity: 0; visibility: hidden;
+transition: all 0.3s; z-index: 1500; backdrop-filter: blur(3px);
+        }
+.overlay.active { opacity: 1; visibility: visible; }
+.no-tasks { text-align:center; color: var(--secondary-text); padding: 100px 20px; font-size: 16px; }
+</style>
+</head>
+<body>
+<header class="top-bar">
+<div class="header-content">
+    <!-- ТЕК АРТҚА КНОПКАСЫ (Настройки кнопкасы мүлдем жойылды) -->
+    <button class="nav-btn" id="btn-back" onclick="window.location.href='index.html'" style="font-size:22px; padding:4px 10px;">←</button>
+    
+    <div class="header-title" id="main-title">Планы</div>
+    
+    <button class="nav-btn" id="btn-weeks" onclick="toggleSidebar('sidebar-right')">Недели</button>
+</div>
+</header>
+
+<main class="main-container">
+<div class="week-buttons-container">
+<div class="week-buttons" id="weekButtons"></div>
+</div>
+<div class="list" id="taskList"></div>
+</main>
+
+<button class="add-task-btn" onclick="openAddTaskModal()">+</button>
+
+<div class="modal" id="modal">
+<div class="modal-content">
+<h3 id="modal-title">Новая задача</h3>
+<input type="text" id="taskInput" placeholder="Название задачи..." autocomplete="off">
+<div class="modal-buttons">
+<button class="modal-btn cancel" id="btn-cancel" onclick="closeModal()">Отмена</button>
+<button class="modal-btn save" id="btn-save" onclick="saveNewTask()">Добавить</button>
+</div>
+</div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeAllSidebars()"></div>
+
+<!-- Настройки сайдбары қалды (бірақ енді ешқандай кнопкадан ашылмайды) -->
+<nav class="sidebar sidebar-left" id="sidebar-left">
+<div class="sidebar-header">
+<div class="sidebar-title" id="side-title-settings">Настройки</div>
+<span class="close-btn" onclick="toggleSidebar('sidebar-left')">×</span>
+</div>
+<div class="settings-group">
+<label id="label-theme">Тема</label>
+<div class="segmented-control" id="theme-ctrl">
+<div class="segment" data-value="light" onclick="setTheme('light')">Светлая</div>
+<div class="segment" data-value="system" onclick="setTheme('system')">Система</div>
+<div class="segment" data-value="dark" onclick="setTheme('dark')">Темная</div>
+</div>
+</div>
+<div class="settings-group">
+<label id="label-lang">Язык</label>
+<div class="segmented-control" id="lang-ctrl">
+<div class="segment" data-value="ru" onclick="setLang('ru')">RU</div>
+<div class="segment" data-value="kz" onclick="setLang('kz')">KZ</div>
+<div class="segment" data-value="en" onclick="setLang('en')">EN</div>
+</div>
+</div>
+</nav>
+
+<nav class="sidebar sidebar-right" id="sidebar-right">
+<div class="sidebar-header">
+<div class="sidebar-title" id="side-title-weeks">Недели</div>
+<span class="close-btn" onclick="toggleSidebar('sidebar-right')">×</span>
+</div>
+<div class="weeks-list" id="weeksList"></div>
+<div class="add-week" id="btn-add-week" onclick="addNewWeek()">➕ Добавить неделю</div>
+</nav>
+
+<script>
+// --- 1. СЛОВАРИ И ЛОКАЛИЗАЦИЯ ---
+const t = {
+ru: {
+title: "Планы", settings: "Настройки", weeks: "Недели", addWeek: "➕ Добавить неделю", weekPrefix: "Неделя",
+newTask: "Новая задача", taskPlaceholder: "Название задачи...", cancel: "Отмена", add: "Добавить",
+noTasks: "Нет задач на этот день", deleteConfirm: "Удалить задачу?",
+theme: "Тема", lang: "Язык", light: "Светлая", system: "Система", dark: "Темная",
+days: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+back: "←"
+            },
+kz: {
+title: "Жоспарлар", settings: "Баптаулар", weeks: "Апталар", addWeek: "➕ Апта қосу", weekPrefix: "Апта",
+newTask: "Жаңа тапсырма", taskPlaceholder: "Тапсырма атауы...", cancel: "Болдырмау", add: "Қосу",
+noTasks: "Бұл күнге тапсырма жоқ", deleteConfirm: "Тапсырманы өшіресіз бе?",
+theme: "Тақырып", lang: "Тіл", light: "Жарық", system: "Жүйе", dark: "Қараңғы",
+days: ["Дс", "Сс", "Ср", "Бс", "Жм", "Сн", "Жк"],
+back: "←"
+            },
+en: {
+title: "Plans", settings: "Settings", weeks: "Weeks", addWeek: "➕ Add Week", weekPrefix: "Week",
+newTask: "New Task", taskPlaceholder: "Task name...", cancel: "Cancel", add: "Add",
+noTasks: "No tasks for this day", deleteConfirm: "Delete task?",
+theme: "Theme", lang: "Language", light: "Light", system: "System", dark: "Dark",
+days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+back: "←"
+            }
+        };
+
+let currentLang = localStorage.getItem('lang') || 'ru';
+
+// --- 2. ДАННЫЕ ---
+const defaultStructure = { 1: { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] } };
+let rawData = JSON.parse(localStorage.getItem('plansDataApp')) || defaultStructure;
+
+// Миграция ескі форматтан
+const oldDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+for (let w in rawData) {
+if (rawData[w]["Пн"]) {
+let newWeek = {};
+oldDays.forEach((d, i) => { newWeek[i] = rawData[w][d] || []; });
+rawData[w] = newWeek;
+}
+}
+let allTasks = rawData;
+let currentWeek = parseInt(localStorage.getItem('currentWeekApp')) || 1;
+let currentDayIndex = parseInt(localStorage.getItem('currentDayIndex')) || 0;
+
+function saveData() {
+localStorage.setItem('plansDataApp', JSON.stringify(allTasks));
+localStorage.setItem('currentWeekApp', currentWeek);
+localStorage.setItem('currentDayIndex', currentDayIndex);
+}
+
+// --- 3. РЕНДЕР ---
+function createWeekButtons() {
+const container = document.getElementById("weekButtons");
+container.innerHTML = "";
+const daysNames = t[currentLang].days;
+daysNames.forEach((dayName, index) => {
+const btn = document.createElement("button");
+btn.className = `day-btn ${index === currentDayIndex ? 'active' : ''}`;
+btn.textContent = dayName;
+btn.onclick = () => {
+currentDayIndex = index;
+saveData();
+createWeekButtons();
+showTasks();
+};
+container.appendChild(btn);
+});
+}
+
+function getStatusDot(status) {
+const colors = { "not-started": "#ccc", "in-progress": "#ffcc00", "done": "#34c759" };
+return `<span class="status-dot" style="background:${colors[status]}"></span>`;
+}
+
+function showTasks() {
+const container = document.getElementById("taskList");
+const tasks = allTasks[currentWeek]?.[currentDayIndex] || [];
+let html = "";
+
+if (tasks.length === 0) {
+html = `<p class="no-tasks">${t[currentLang].noTasks}</p>`;
+} else {
+tasks.forEach((task, index) => {
+html += `
+<div class="task ${task.status === 'done' ? 'done' : ''}" data-index="${index}">
+${getStatusDot(task.status)}
+<span>${task.text}</span>
+<button class="delete-btn" onclick="deleteTask(${index}); event.stopImmediatePropagation();">✕</button>
+</div>`;
+});
+}
+container.innerHTML = html;
+}
+
+// ЖАҢАРТЫЛҒАН ӨШІРУ ФУНКЦИЯСЫ (енді өте сенімді)
+window.deleteTask = function(index) {
+if (confirm(t[currentLang].deleteConfirm)) {
+if (allTasks[currentWeek] && allTasks[currentWeek][currentDayIndex]) {
+allTasks[currentWeek][currentDayIndex].splice(index, 1);
+saveData();
+showTasks();
+}
+}
+};
+
+// Тек статус өзгерту (өшіру кнопкасы енді бөлек)
+document.getElementById("taskList").addEventListener("click", (e) => {
+if (e.target.closest('.delete-btn')) return; // өшіру кнопкасын елемеу
+const taskEl = e.target.closest('.task');
+if (taskEl) {
+const index = parseInt(taskEl.dataset.index);
+const task = allTasks[currentWeek]?.[currentDayIndex]?.[index];
+if (!task) return;
+if (task.status === "not-started") task.status = "in-progress";
+else if (task.status === "in-progress") task.status = "done";
+else task.status = "not-started";
+saveData();
+showTasks();
+}
+});
+
+function renderWeeksList() {
+const container = document.getElementById("weeksList");
+container.innerHTML = "";
+Object.keys(allTasks).sort((a,b)=>parseInt(a)-parseInt(b)).forEach(num => {
+const item = document.createElement("div");
+item.className = `week-item ${parseInt(num) === currentWeek ? 'active' : ''}`;
+item.textContent = `${t[currentLang].weekPrefix} ${num}`;
+item.onclick = () => {
+currentWeek = parseInt(num);
+saveData();
+renderWeeksList();
+showTasks();
+closeAllSidebars();
+};
+container.appendChild(item);
+});
+}
+
+function addNewWeek() {
+const max = Math.max(...Object.keys(allTasks).map(Number));
+const newWeek = max + 1;
+allTasks[newWeek] = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
+currentWeek = newWeek;
+saveData();
+renderWeeksList();
+showTasks();
+closeAllSidebars();
+}
+
+// --- 4. МОДАЛ ---
+function openAddTaskModal() {
+const input = document.getElementById("taskInput");
+input.value = "";
+document.getElementById("modal").classList.add("show");
+setTimeout(() => input.focus(), 200);
+}
+function closeModal() {
+document.getElementById("modal").classList.remove("show");
+}
+function saveNewTask() {
+const text = document.getElementById("taskInput").value.trim();
+if (!text) return closeModal();
+if (!allTasks[currentWeek]) allTasks[currentWeek] = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
+if (!allTasks[currentWeek][currentDayIndex]) allTasks[currentWeek][currentDayIndex] = [];
+allTasks[currentWeek][currentDayIndex].push({ text: text, status: "not-started" });
+saveData();
+closeModal();
+showTasks();
+}
+document.getElementById("taskInput").addEventListener("keypress", e => {
+if (e.key === "Enter") saveNewTask();
+});
+
+// --- 5. САЙДБАР ---
+function toggleSidebar(id) {
+const sidebar = document.getElementById(id);
+const overlay = document.getElementById('overlay');
+const isActive = sidebar.classList.contains('active');
+closeAllSidebars();
+if (!isActive) {
+sidebar.classList.add('active');
+overlay.classList.add('active');
+}
+}
+function closeAllSidebars() {
+document.getElementById("sidebar-left").classList.remove("active");
+document.getElementById("sidebar-right").classList.remove("active");
+document.getElementById("overlay").classList.remove("active");
+}
+
+// --- 6. ТЕМА + ТІЛ ---
+function setTheme(mode) {
+localStorage.setItem('theme', mode);
+const body = document.body;
+document.querySelectorAll('#theme-ctrl .segment').forEach(s => {
+s.classList.toggle('active', s.getAttribute('data-value') === mode);
+});
+if (mode === 'dark') body.classList.add('dark-mode');
+else if (mode === 'light') body.classList.remove('dark-mode');
+else {
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+body.classList.toggle('dark-mode', isDark);
+}
+}
+
+function setLang(lang) {
+currentLang = lang;
+localStorage.setItem('lang', lang);
+document.querySelectorAll('#lang-ctrl .segment').forEach(s => {
+s.classList.toggle('active', s.getAttribute('data-value') === lang);
+});
+const dict = t[lang];
+
+document.getElementById('main-title').innerText = dict.title;
+document.getElementById('btn-weeks').innerText = dict.weeks;
+document.getElementById('side-title-settings').innerText = dict.settings;
+document.getElementById('side-title-weeks').innerText = dict.weeks;
+document.getElementById('btn-add-week').innerText = dict.addWeek;
+document.getElementById('modal-title').innerText = dict.newTask;
+document.getElementById('taskInput').placeholder = dict.taskPlaceholder;
+document.getElementById('btn-cancel').innerText = dict.cancel;
+document.getElementById('btn-save').innerText = dict.add;
+document.getElementById('label-theme').innerText = dict.theme;
+document.getElementById('label-lang').innerText = dict.lang;
+document.getElementById('btn-back').innerText = dict.back;
+
+const themeSegments = document.querySelectorAll('#theme-ctrl .segment');
+themeSegments[0].innerText = dict.light;
+themeSegments[1].innerText = dict.system;
+themeSegments[2].innerText = dict.dark;
+
+createWeekButtons();
+renderWeeksList();
+showTasks();
+}
+
+// --- 7. ЗАПУСК ---
+window.onload = () => {
+const savedTheme = localStorage.getItem('theme') || 'system';
+setTheme(savedTheme);
+setLang(currentLang);
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+if (localStorage.getItem('theme') === 'system') {
+document.body.classList.toggle('dark-mode', e.matches);
+}
+});
+};
+</script>
+</body>
+</html>
